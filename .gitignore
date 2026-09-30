@@ -1,0 +1,9 @@
+.jac/
+node_modules/
+.vscode/
+.idea/
+dist/
+.env
+.env.*
+!.env.example
+.DS_Store
