@@ -1,4 +1,4 @@
-"""Pure math. Never infer unsold tickets from unclaimed prizes."""
+"""Pure calculations over published or explicitly estimated inventory."""
 import from math { isfinite }
 import from datetime { date, datetime }
 import from models { GameSnapshot, Metrics, RankedGame, Query, PrizeTier }
@@ -10,7 +10,7 @@ def validate_snapshot(game: GameSnapshot) -> None {
     if not isfinite(game.ticket_price) or game.ticket_price <= 0 {
         raise ValueError("Ticket price must be finite and positive.");
     }
-    if game.original_tickets <= 0 or not game.prizes {
+    if (game.original_tickets is not None and game.original_tickets <= 0) or not game.prizes {
         raise ValueError("Original ticket inventory and prize tiers are required.");
     }
     if not isfinite(game.advertised_odds) or game.advertised_odds < 1 {
@@ -34,10 +34,10 @@ def validate_snapshot(game: GameSnapshot) -> None {
         original_winners += tier.original;
         remaining_winners += tier.remaining;
     }
-    if original_winners > game.original_tickets { raise ValueError("More winning tickets than original inventory."); }
+    if game.original_tickets is not None and original_winners > game.original_tickets { raise ValueError("More winning tickets than original inventory."); }
     if game.remaining_tickets is not None {
         inventory = game.remaining_tickets;
-        if inventory < 0 or inventory > game.original_tickets or remaining_winners > inventory {
+        if inventory < 0 or (game.original_tickets is not None and inventory > game.original_tickets) or remaining_winners > inventory {
             raise ValueError("Remaining inventory is incompatible with prize counts.");
         }
         if game.inventory_method not in ["demo assumption", "published unsold", "estimate"] {
@@ -52,30 +52,48 @@ def calculate(game: GameSnapshot) -> Metrics {
     remaining_value = 0.0;
     winners = 0;
     profit_winners = 0;
+    original_winners = 0;
+    original_profit_winners = 0;
     top = max(game.prizes, key=lambda (p: PrizeTier) -> float { return p.amount; });
     for tier in game.prizes {
         original_value += tier.amount * tier.original;
         remaining_value += tier.amount * tier.remaining;
         winners += tier.remaining;
-        if tier.amount > game.ticket_price { profit_winners += tier.remaining; }
+        original_winners += tier.original;
+        if tier.amount > game.ticket_price { profit_winners += tier.remaining; original_profit_winners += tier.original; }
     }
-    result = Metrics(launch_ev_per_dollar=original_value / game.original_tickets / game.ticket_price,
+    result = Metrics(launch_ev_per_dollar=(original_value / game.original_tickets / game.ticket_price) if game.original_tickets is not None else None,
         top_prizes_remaining=top.remaining / top.original);
     inventory = game.remaining_tickets;
     if inventory is None or inventory == 0 { return result; }
     result.gross_ev = remaining_value / inventory;
     result.net_ev = remaining_value / inventory - game.ticket_price;
+    # Keep every ticket in the denominator; exclude only the largest prize payout.
+    result.non_jackpot_net_ev = (remaining_value - top.amount * top.remaining) / inventory - game.ticket_price;
     result.ev_per_dollar = remaining_value / inventory / game.ticket_price;
     result.any_probability = winners / inventory;
     result.profit_probability = profit_winners / inventory;
     result.jackpot_probability = top.remaining / inventory;
-    result.ev_change = remaining_value / inventory / game.ticket_price - result.launch_ev_per_dollar;
-    result.jackpot_enrichment = (top.remaining / top.original) / (inventory / game.original_tickets);
+    if result.launch_ev_per_dollar is not None {
+        result.ev_change = remaining_value / inventory / game.ticket_price - result.launch_ev_per_dollar;
+    }
+    if game.original_tickets is not None {
+        result.jackpot_enrichment = (top.remaining / top.original) / (inventory / game.original_tickets);
+        result.jackpot_boost = result.jackpot_enrichment - 1;
+        result.any_boost = (winners / inventory) / (original_winners / game.original_tickets) - 1;
+        if original_profit_winners > 0 {
+            result.profit_boost = (profit_winners / inventory) / (original_profit_winners / game.original_tickets) - 1;
+        }
+    }
     return result;
 }
 
 def metric_value(item: RankedGame, metric: str) -> float | None {
     m = item.metrics;
+    if metric == "non_jackpot_net_ev" { return m.non_jackpot_net_ev; }
+    if metric == "any_boost" { return m.any_boost; }
+    if metric == "profit_boost" { return m.profit_boost; }
+    if metric == "jackpot_boost" { return m.jackpot_boost; }
     if metric == "ev_per_dollar" { return m.ev_per_dollar; }
     if metric == "any_probability" { return m.any_probability; }
     if metric == "profit_probability" { return m.profit_probability; }
@@ -90,8 +108,8 @@ def rank_games(games: list[GameSnapshot], query: Query) -> list[RankedGame] {
     if not isfinite(query.min_price) or not isfinite(query.max_price) or query.min_price < 0 or query.max_price < query.min_price {
         raise ValueError("Provide a valid ticket-price range.");
     }
-    if query.limit < 1 or query.limit > 100 { raise ValueError("Limit must be 1 to 100."); }
-    if query.sort_by not in ["ev_per_dollar", "any_probability", "profit_probability", "jackpot_probability", "top_prizes_remaining", "ev_change", "jackpot_enrichment"] {
+    if query.limit < 1 or query.limit > 1000 { raise ValueError("Limit must be 1 to 1000."); }
+    if query.sort_by not in ["non_jackpot_net_ev", "any_boost", "profit_boost", "jackpot_boost", "ev_per_dollar", "any_probability", "profit_probability", "jackpot_probability", "top_prizes_remaining", "ev_change", "jackpot_enrichment"] {
         raise ValueError("Unsupported ranking metric.");
     }
     rows: list[RankedGame] = [];

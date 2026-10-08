@@ -1,7 +1,7 @@
 [project]
-name = "chatgambles4me"
+name = "betBetter"
 version = "0.1.0"
-description = "Michigan scratch-off analysis prototype with deterministic math and demo data"
+description = "Michigan scratch-off analysis prototype with deterministic math and official Michigan data"
 entry-point = "main"
 kind = "web-app"
 jac-version = "==0.37.23"

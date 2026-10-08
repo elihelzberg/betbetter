@@ -1,8 +1,20 @@
-"""Adapter seam: return normalized snapshots. Live collection is not implemented."""
+"""Official live snapshots; fictional fixtures are for isolated tests only."""
 import from models { GameSnapshot, PrizeTier }
 
-def fetch_live() -> list[GameSnapshot] {
-    raise NotImplementedError("Implement the Michigan official-source adapter here; demo data is not live data.");
+import from michigan_live { estimated_snapshots }
+
+def fetch_live(history: bool = False) -> list[GameSnapshot] {
+    rows = estimated_snapshots(history=history);
+    snapshots: list[GameSnapshot] = [];
+    for row in rows {
+        prizes = [PrizeTier(amount=p["amount"], original=p["original"], remaining=p["remaining"]) for p in row["prizes"]];
+        snapshots.append(GameSnapshot(game_id=row["game_id"], name=row["name"], state="MI",
+            ticket_price=row["ticket_price"], prizes=prizes, original_tickets=row["original_tickets"], remaining_tickets=row["remaining_tickets"],
+            observed_at=row["observed_at"], launch_date=row["launch_date"], advertised_odds=row["advertised_odds"],
+            inventory_method="estimate", inventory_note=row["inventory_note"], source_url=row["source_url"], is_demo=False,
+            source_updated_at=row["source_updated_at"]));
+    }
+    return snapshots;
 }
 
 def demo_snapshots() -> list[GameSnapshot] {

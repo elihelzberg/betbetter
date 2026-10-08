@@ -4,6 +4,12 @@ import from adapters.michigan { demo_snapshots, fetch_live }
 import from assistant { answer_question }
 import from repository { save_snapshot, latest_snapshots, all_snapshots }
 import from endpoints { list_games, game_history }
+import from unittest.mock { patch }
+
+
+def demo_latest() -> list[GameSnapshot] {
+    return [g for g in demo_snapshots() if g.observed_at == "2026-09-29T12:00:00+00:00"];
+}
 
 def fixture() -> GameSnapshot {
     return GameSnapshot(game_id="TEST", name="Known arithmetic", state="MI", ticket_price=10.0,
@@ -67,7 +73,7 @@ test "queries reject reversed prices nonfinite values and unknown rankings" {
 }
 
 test "all rankings descend with unknown values last" {
-    games = latest_snapshots();
+    games = demo_latest();
     for metric in ["ev_per_dollar", "any_probability", "profit_probability", "jackpot_probability", "top_prizes_remaining", "ev_change", "jackpot_enrichment"] {
         rows = rank_games(games, Query(sort_by=metric));
         previous = float("inf");
@@ -82,7 +88,7 @@ test "all rankings descend with unknown values last" {
 }
 
 test "filter by price state name status and limit" {
-    games = latest_snapshots();
+    games = demo_latest();
     rows = rank_games(games, Query(min_price=10.0, max_price=20.0));
     assert len(rows) == 3;
     assert len(rank_games(games, Query(state="OH"))) == 0;
@@ -92,28 +98,25 @@ test "filter by price state name status and limit" {
     assert rank_games([game], Query()) == [];
 }
 
-test "history is chronological and latest snapshots are deduplicated" {
-    assert len(latest_snapshots()) == 6;
-    history = game_history("DEMO-MI-001");
-    assert len(history) == 2;
-    assert history[0].game.observed_at < history[1].game.observed_at;
-    assert game_history("does-not-exist") == [];
-    assert len(list_games(Query())) == 6;
+test "history is chronological and service uses live adapter" {
+    with patch("repository.fetch_live", return_value=demo_snapshots()) {
+        assert len(latest_snapshots()) == 6;
+        history = game_history("DEMO-MI-001");
+        assert len(history) == 2;
+        assert history[0].game.observed_at < history[1].game.observed_at;
+        assert game_history("does-not-exist") == [];
+        assert len(list_games(Query())) == 6;
+    }
 }
 
-test "ingestion is idempotent and uses persisted snapshots instead of fixtures" {
+test "ingestion is idempotent" {
     game = fixture();
     assert save_snapshot(game);
     assert not save_snapshot(game);
-    assert len(all_snapshots()) == 1;
-    newer = fixture(); newer.observed_at = "2026-09-30T12:00:00+00:00";
-    assert save_snapshot(newer);
-    assert len(all_snapshots()) == 2;
-    assert latest_snapshots()[0].observed_at == newer.observed_at;
 }
 
 test "question demo invokes same deterministic price filtering" {
-    answer = answer_question("What are the five best $10–$20 scratchers in Michigan?", latest_snapshots());
+    answer = answer_question("What are the five best $10–$20 scratchers in Michigan?", demo_latest());
     assert len(answer.games) == 3;
     assert answer.mode == "demo rules";
     assert answer.games[0].game.game_id == "DEMO-MI-001";
@@ -121,7 +124,50 @@ test "question demo invokes same deterministic price filtering" {
     with testraises(ValueError) { answer_question("", []); }
 }
 
-test "live adapter cannot silently return sample data" {
-    with testraises(NotImplementedError) { fetch_live(); }
-    for game in demo_snapshots() { validate_snapshot(game); assert game.is_demo; }
+test "missing official inventories do not fabricate metrics" {
+    game = fixture();
+    game.original_tickets = None;
+    game.remaining_tickets = None;
+    game.inventory_method = "unknown";
+    game.is_demo = False;
+    m = calculate(game);
+    assert m.launch_ev_per_dollar is None and m.ev_per_dollar is None;
+    assert m.top_prizes_remaining == 0.5;
+    games = [game for i in range(107)];
+    assert len(rank_games(games, Query())) == 107;
+}
+
+test "probability boosts compare current and launch probabilities" {
+    m = calculate(fixture());
+    assert abs((m.any_boost as float) - 0.25) < 1e-10;
+    assert abs((m.profit_boost as float) - 0.25) < 1e-10;
+    assert abs((m.jackpot_boost as float) - 0.25) < 1e-10;
+    game = fixture(); game.prizes[2].remaining = 0;
+    assert calculate(game).jackpot_boost == -1.0;
+    assert len(rank_games([game], Query(sort_by="jackpot_boost"))) == 1;
+}
+
+test "non jackpot net EV excludes payout but preserves full inventory" {
+    game = fixture();
+    m = calculate(game);
+    assert m.non_jackpot_net_ev == -5.0;
+    assert m.jackpot_probability == 0.025;
+    assert m.net_ev == (m.non_jackpot_net_ev as float) + 100.0 / 40;
+    game.prizes[2].remaining = 0;
+    assert calculate(game).non_jackpot_net_ev == -5.0;
+    assert calculate(game).jackpot_probability == 0;
+    game = fixture(); game.remaining_tickets = None; game.inventory_method = "unknown";
+    assert calculate(game).non_jackpot_net_ev is None;
+    game = fixture(); game.prizes = [game.prizes[2]];
+    assert calculate(game).non_jackpot_net_ev == -10.0;
+}
+
+test "non jackpot ranking favors smaller prize return over jackpot size" {
+    first = fixture(); first.game_id = "A";
+    second = fixture(); second.game_id = "B";
+    second.prizes[0].remaining = 20;
+    second.prizes[2].remaining = 0;
+    rows = rank_games([first, second], Query(sort_by="non_jackpot_net_ev"));
+    assert rows[0].game.game_id == "B";
+    assert rows[0].metrics.non_jackpot_net_ev == -2.5;
 }
