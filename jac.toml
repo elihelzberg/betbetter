@@ -36,3 +36,6 @@ host = "127.0.0.1"
 models = "server"
 endpoints = "server"
 "components.Formatting" = "client"
+
+[dependencies.pypi]
+byllm = "~=0.6"
