@@ -77,7 +77,20 @@ def:pub Dashboard -> JsxElement {
             </section>
             {<GameDetails item={selected} history={history} loading={history_loading}/> if selected is not None else None}
             <div className="bottom-grid">
-                <section className="panel"><span className="eyebrow">ASK THE DATA</span><h2>A starting point for your AI.</h2><p className="muted">Working rule-based demo · Michigan only · no API key needed</p>
+                <section className="panel"><span className="eyebrow">ASK THE DATA</span><h2>A starting point for your AI.</h2><p className="muted">Powered by Gemini AI · Rankings calculated using Michigan Lottery data</p>
+                <div className="ai-disclaimer" role="note">
+                    <strong>AI &amp; Gambling Disclaimer</strong>
+                    <p>
+                        This chatbot uses artificial intelligence and may
+                        produce inaccurate or incomplete information.
+                        Lottery odds, rankings, and expected returns are
+                        estimates, not guarantees. This information is
+                        for educational purposes only and does not
+                        constitute financial or gambling advice.
+                        Gambling involves financial risk. Please play
+                        responsibly.
+                    </p>
+                </div>
                     <form className="question-form" onSubmit={ask}><input aria-label="Ask about games" maxLength={500} required value={question} onChange={lambda (e: ChangeEvent) { question = e.target.value; }}/><button className="primary" type="submit" disabled={asking}>{"Working…" if asking else "Ask"}</button></form>
                     {<div className="answer" aria-live="polite"><p>{answer.message}</p><ol>{[<li key={r.game.game_id}>{r.game.name + " · " + money(r.game.ticket_price) + " ticket · " + money(r.metrics.ev_per_dollar) + " gross EV / $1"}</li> for r in answer.games]}</ol></div> if answer is not None else None}
                 </section>
