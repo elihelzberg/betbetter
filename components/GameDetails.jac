@@ -4,7 +4,7 @@ import from .Formatting { money, percent, odds, change, boost }
 def:pub GameDetails(item: RankedGame, history: list[RankedGame], loading: bool) -> JsxElement {
     g = item.game;
     m = item.metrics;
-    return <section className="panel details" aria-label="Game details">
+    return <section id="game-details" className="panel details" aria-label="Game details">
         <div className="section-heading"><div><span className="eyebrow">BEHIND THE NUMBERS</span><h2>{g.name}</h2></div><span className="tag">{g.game_id}</span></div>
         <div className="detail-stats">
             <div><small>Est. total gross payout / ticket</small><strong>{money(m.gross_ev)}</strong></div>
