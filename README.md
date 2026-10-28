@@ -3,12 +3,14 @@
 Michigan scratch-off research built with Jac 0.37.23 and official Michigan Lottery data.
 
 ```sh
-jac install --npm
-python3 test_lottery.py
 jac run --dev
 ```
 
-Open http://localhost:8000. The collector requires `curl` on PATH and verifies TLS certificates using its certificate store.
+The dev server refreshes the official Michigan scratch-off catalog at startup.
+The collector requires `curl` on PATH and verifies TLS certificates using its
+certificate store. On a fresh checkout, install the npm dependencies declared
+in `jac.toml` once with `jac install --npm`; Jac does not provide a project
+startup hook for `jac run --dev` to run that install automatically.
 
 ## Expo Go mobile app
 
