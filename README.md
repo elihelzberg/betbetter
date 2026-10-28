@@ -10,6 +10,18 @@ jac run --dev
 
 Open http://localhost:8000. The collector requires `curl` on PATH and verifies TLS certificates using its certificate store.
 
+## Expo Go mobile app
+
+Run the existing Jac server with `jac run --dev` in this directory. In a second
+terminal, run `cd mobile && npx expo start --go`, then scan the QR code with Expo
+Go. Keep the computer and phone on the same Wi-Fi; Expo tunnel mode does not
+expose the local data API.
+
+The Jac server also exposes `POST /api/games`, `GET /api/games/{game_id}/history`,
+and `POST /api/ask` for the mobile app. These return bare JSON and call the same
+services and SQLite cache as the website. A separate `server.py` process is not
+needed. Restart the Jac server after first adding these routes.
+
 The website discovers **every game in the official retail instant-game catalog** rather than keeping a fixed ID list. On October 8, 2026 this was 107 games. It uses the GraphQL prize query from the original `test_lottery.py`, batching ten games per request. Catalog counts can change as games launch or disappear. Draw games, online games, pull tabs and Fast Cash are separate categories.
 
 ## Collection and storage
