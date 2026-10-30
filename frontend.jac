@@ -4,6 +4,23 @@ import from .components.Formatting { money, percent, change, boost, odds }
 import from .components.GameDetails { GameDetails }
 import from .components.Styles { Styles }
 
+
+def chatbot_metric(r: RankedGame, sort_by: str) -> str {
+    if sort_by == "jackpot_probability" {
+        return percent(r.metrics.jackpot_probability) + " jackpot probability";
+    }
+    if sort_by == "profit_probability" {
+        return percent(r.metrics.profit_probability) + " profit probability";
+    }
+    if sort_by == "any_probability" {
+        return percent(r.metrics.any_probability) + " any-prize probability";
+    }
+    if sort_by == "ev_change" {
+        return change(r.metrics.ev_change) + " EV change";
+    }
+    return money(r.metrics.ev_per_dollar) + " gross EV / $1";
+}
+
 def:pub Dashboard -> JsxElement {
     has games: list[RankedGame] = [],
         minimum: str = "0", maximum: str = "100", search: str = "",
@@ -84,9 +101,29 @@ def:pub Dashboard -> JsxElement {
             </section>
             {<GameDetails item={selected} history={history} loading={history_loading}/> if selected is not None else None}
             <div className="bottom-grid">
-                <section className="panel"><span className="eyebrow">ASK THE DATA</span><h2>A starting point for your AI.</h2><p className="muted">Working rule-based demo · Michigan only · no API key needed</p>
+                <section className="panel"><span className="eyebrow">ASK THE DATA</span><h2>A starting point for your AI.</h2><p className="muted">AI-assisted research · Rankings calculated using Michigan Lottery data</p>
+                <div className="ai-disclaimer" role="note">
+                    <strong>AI &amp; Gambling Disclaimer</strong>
+                    <p>
+                        This chatbot uses artificial intelligence and may
+                        produce inaccurate or incomplete information.
+                        Lottery odds, rankings, and expected returns are
+                        estimates, not guarantees. This information is
+                        for educational purposes only and does not
+                        constitute financial or gambling advice.
+                        Gambling involves financial risk. Please play
+                        responsibly.
+                    </p>
+                </div>
                     <form className="question-form" onSubmit={ask}><input aria-label="Ask about games" maxLength={500} required value={question} onChange={lambda (e: ChangeEvent) { question = e.target.value; }}/><button className="primary" type="submit" disabled={asking}>{"Working…" if asking else "Ask"}</button></form>
-                    {<div className="answer" aria-live="polite"><p>{answer.message}</p><ol>{[<li key={r.game.game_id}>{r.game.name + " · " + money(r.game.ticket_price) + " ticket · " + money(r.metrics.ev_per_dollar) + " gross EV / $1"}</li> for r in answer.games]}</ol></div> if answer is not None else None}
+                        {<div className="answer" aria-live="polite">
+                            <p>{answer.message}</p>
+                            <ol>
+                                {[<li key={r.game.game_id}>
+                                    {r.game.name + " · " + money(r.game.ticket_price) + " ticket · " + chatbot_metric(r, answer.sort_by)}
+                                </li> for r in answer.games]}
+                            </ol>
+                        </div> if answer is not None else None}
                 </section>
                 <section className="panel method"><span className="eyebrow">THE MATH, EXPLAINED</span><h2>Assumptions stay visible.</h2><div className="formula">Total gross EV = Σ(prize × remaining count) / estimated remaining tickets</div><p>Net EV excluding jackpot sums every smaller prize payout, divides by the same estimated ticket inventory, and subtracts the full ticket price. Jackpot odds use the remaining count of the largest prize divided by estimated remaining tickets.</p><p>Net EV subtracts the ticket price. Profit means a prize strictly larger than the ticket cost. EV change is the difference in gross return per dollar, shown in percentage points.</p><p>Unclaimed prizes can include already-sold tickets. Even a published unsold-ticket count does not fix that mismatch. Launch inventory is estimated from starting winning tickets × advertised odds. Remaining inventory uses the pooled retention of prizes up to twice the ticket price, falling back to the lowest tiers. The pool is bounded to fit all remaining winners.</p><p>Jackpot enrichment compares the fraction of top prizes left with the fraction of tickets left. An enrichment above 1 does not by itself imply a profitable game. Prize claim delays can create apparent boosts; small differences may reflect model error.</p></section>
             </div>

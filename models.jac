@@ -25,4 +25,9 @@ obj Query {
         max_price: float = 100.0, sort_by: str = "ev_per_dollar",
         search: str = "", limit: int = 1000;
 }
-obj Answer { has message: str, games: list[RankedGame], mode: str = "demo rules"; }
+obj Answer {
+    has message: str;
+    has games: list[RankedGame];
+    has mode: str = "demo rules";
+    has sort_by: str = "ev_per_dollar";
+}

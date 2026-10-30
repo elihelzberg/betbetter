@@ -1,7 +1,7 @@
 [project]
 name = "betBetter"
 version = "0.1.0"
-description = "Michigan scratch-off analysis prototype with deterministic math and official Michigan data"
+Adescription = "Michigan scratch-off analysis prototype with deterministic math and official Michigan data"
 entry-point = "main"
 kind = "web-app"
 jac-version = "==0.37.23"
@@ -39,3 +39,7 @@ endpoints = "server"
 
 [dependencies.pypi]
 byllm = "~=0.6"
+
+[byllm]
+[byllm.model]
+default_model = "openrouter/openrouter/free"
