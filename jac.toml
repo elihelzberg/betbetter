@@ -41,4 +41,4 @@ endpoints = "server"
 [byllm]
 
 [byllm.model]
-default_model = "gemini/gemini-3.6-flash"
+default_model = "openrouter/openrouter/free"
