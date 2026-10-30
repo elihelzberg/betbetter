@@ -37,8 +37,9 @@ models = "server"
 endpoints = "server"
 "components.Formatting" = "client"
 
+[dependencies.pypi]
+byllm = "~=0.6"
 
 [byllm]
-
 [byllm.model]
 default_model = "openrouter/openrouter/free"

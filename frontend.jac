@@ -32,6 +32,13 @@ def:pub Dashboard -> JsxElement {
 
     async can with entry { await refresh(); }
 
+    can with [selected] entry {
+        if selected {
+            details: any = document.getElementById("game-details");
+            if details { details.scrollIntoView({"behavior": "smooth", "block": "start"}); }
+        }
+    }
+
     async def refresh {
         loading = True;
         error = "";
