@@ -2,6 +2,10 @@
 
 Michigan scratch-off research built with Jac and official Michigan Lottery data.
 
+Run either the **web dashboard** in your browser or the **mobile app** in Expo Go. Both use the same Jac backend. Web startup and mobile use on a phone have been confirmed on macOS; Windows/WSL instructions are provided below but remain untested.
+
+Already installed everything? Jump to [everyday commands](#everyday-commands-macos-or-ubuntu). Otherwise, follow your operating system's setup below. All commands use `~/Projects/betbetter`; substitute your checkout's path if different.
+
 ## macOS (Apple Silicon)
 
 Open **Terminal**. Run each block in order. These commands install Jac **0.37.25**, the version verified locally. This release has no Intel Mac binary.
@@ -51,10 +55,12 @@ export NVM_DIR="$HOME/.nvm"
 nvm install 24
 cd ~/Projects/betbetter/mobile
 npm ci
-npx expo start --go
+npx expo start --go --lan --port 8081
 ```
 
 Install [Expo Go](https://expo.dev/go) compatible with **SDK 58** on your phone, connect it to the same Wi-Fi as your Mac, and scan the QR code. Keep both terminals running. Expo tunnel mode does not expose the local games API.
+
+Expo also prints an address like `exp://192.168.1.10:8081`. You can open that address in Expo Go instead of scanning. Use the address printed by your terminal; it changes with your computer's network. The web dashboard remains available at **http://localhost:8000/** while mobile is running.
 
 ## Windows 11 / Windows 10 (WSL)
 
@@ -129,19 +135,55 @@ export NVM_DIR="$HOME/.nvm"
 nvm install 24
 cd ~/Projects/betbetter/mobile
 npm ci
-npx expo start --go --lan
+npx expo start --go --lan --port 8081
 ```
 
 Use Expo Go compatible with **SDK 58**, put your phone on the same Wi-Fi, and scan the QR code. Allow local-network access in Windows/Hyper-V firewall settings if needed. First check that your phone can open `http://<Windows-LAN-IP>:8000/`. See Microsoft's [WSL networking guide](https://learn.microsoft.com/en-us/windows/wsl/networking) if either the API or Expo is unreachable. Windows 10's default WSL networking needs manual port forwarding for phone access; the website instructions above do not need this.
 
 ## Everyday commands (macOS or Ubuntu)
 
-**Start again after setup:**
+**Web version — one terminal:**
 
 ```sh
 cd ~/Projects/betbetter
 ~/.local/bin/jac run --dev
 ```
+
+Open **http://localhost:8000/** in your computer's browser.
+
+**Mobile version — terminal 1 (backend and website):**
+
+```sh
+cd ~/Projects/betbetter
+~/.local/bin/jac run --dev --host 0.0.0.0
+```
+
+If the web command is already running, stop it with Ctrl+C before using this command. On Windows, complete the WSL phone-networking setup above first.
+
+**Mobile version — terminal 2 (Expo):**
+
+```sh
+export NVM_DIR="$HOME/.nvm"
+. "$NVM_DIR/nvm.sh"
+nvm use 24
+cd ~/Projects/betbetter/mobile
+npx expo start --go --lan --port 8081
+```
+
+Scan the QR code with Expo Go, or open the printed `exp://...:8081` address on your phone. Keep both terminals running and use the same Wi-Fi. Press Ctrl+C in each terminal to stop everything.
+
+If you already have npm but have not installed nvm, this is the command used successfully during local verification; it downloads and runs Node 24 for Expo without changing your system Node:
+
+```sh
+cd ~/Projects/betbetter/mobile
+npm exec --yes --package=node@24 -- node node_modules/expo/bin/cli start --go --lan --port 8081
+```
+
+| Port | Service |
+| --- | --- |
+| 8000 | Web dashboard and mobile `/api` proxy |
+| 8001 | Jac backend (started automatically by Jac) |
+| 8081 | Expo mobile app bundle |
 
 **Check the games API from another terminal:**
 
@@ -164,7 +206,9 @@ python3 test_lottery.py
 
 - Use `~/.local/bin/jac` as shown above; the older Homebrew Jac 0.16.7 cannot run this app. `jac.toml` targets 0.37.23; startup and a games request were verified with 0.37.25.
 - If you cloned elsewhere, replace `~/Projects/betbetter` in the commands with your folder. Do not clone again into an existing `betbetter` directory.
-- Keep ports **8000** (website and mobile API proxy) and **8001** (backend) free. Stop previous instances with Ctrl+C.
+- Keep ports **8000**, **8001**, and **8081** free before starting. Stop previous Jac or Expo instances with Ctrl+C; avoid running two Expo processes for the same project.
+- Use **Node 24** for mobile. The installed Node 23 produced unsupported-engine warnings; the mobile iOS bundle compiled successfully using Node 24.
+- If Expo opens but games do not load, check that Jac is running and your phone can open `http://<computer-IP>:8000/`. The app uses the Expo computer's address and port 8000 for its API.
 - Startup downloads real lottery data. Internet access is required for the first collection; failed refreshes keep the previous cache. Game counts change over time.
 - Jac manages its local database. No separate `server.py`, manual Postgres setup, or lottery API key is needed. Email/scheduler-disabled messages are optional-service notices.
 - Client changes hot-reload; restart Jac after backend changes.
