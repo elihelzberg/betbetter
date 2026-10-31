@@ -1,30 +1,176 @@
 # betBetter
 
-Michigan scratch-off research built with Jac 0.37.23 and official Michigan Lottery data.
+Michigan scratch-off research built with Jac and official Michigan Lottery data.
+
+## macOS (Apple Silicon)
+
+Open **Terminal**. Run each block in order. These commands install Jac **0.37.25**, the version verified locally. This release has no Intel Mac binary.
+
+**1. Install Jac:**
 
 ```sh
-jac run --dev
+curl -fsSL https://jaclang.org/install.sh | bash -s -- --version 0.37.25
+~/.local/bin/jac --version
 ```
 
-The dev server refreshes the official Michigan scratch-off catalog at startup.
-The collector requires `curl` on PATH and verifies TLS certificates using its
-certificate store. On a fresh checkout, install the npm dependencies declared
-in `jac.toml` once with `jac install --npm`; Jac does not provide a project
-startup hook for `jac run --dev` to run that install automatically.
+**2. Get the project and install dependencies:**
 
-## Expo Go mobile app
+```sh
+mkdir -p ~/Projects
+cd ~/Projects
+git clone https://github.com/elihelzberg/betbetter.git
+cd betbetter
+~/.local/bin/jac install
+~/.local/bin/jac install --npm
+```
 
-Run the existing Jac server with `jac run --dev` in this directory. In a second
-terminal, run `cd mobile && npx expo start --go`, then scan the QR code with Expo
-Go. Keep the computer and phone on the same Wi-Fi; Expo tunnel mode does not
-expose the local data API.
+If Git asks to install Apple's command-line tools, finish that installation and rerun step 2. If you already have the repository, open a terminal in that folder and run just the two `jac install` commands.
 
-The Jac server also exposes `POST /api/games`, `GET /api/games/{game_id}/history`,
-and `POST /api/ask` for the mobile app. These return bare JSON and call the same
-services and SQLite cache as the website. A separate `server.py` process is not
-needed. Restart the Jac server after first adding these routes.
+**3. Start the website and backend:**
 
-The website discovers **every game in the official retail instant-game catalog** rather than keeping a fixed ID list. On October 8, 2026 this was 107 games. It uses the GraphQL prize query from the original `test_lottery.py`, batching ten games per request. Catalog counts can change as games launch or disappear. Draw games, online games, pull tabs and Fast Cash are separate categories.
+```sh
+cd ~/Projects/betbetter
+~/.local/bin/jac run --dev
+```
+
+Wait for **Server ready**, then open **http://localhost:8000/**. Leave this terminal running. Press **Ctrl+C** to stop.
+
+**4. Optional: run the mobile app.** Stop Jac with Ctrl+C, then restart it so your phone can connect:
+
+```sh
+cd ~/Projects/betbetter
+~/.local/bin/jac run --dev --host 0.0.0.0
+```
+
+Open a **second Terminal window** and paste:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+. "$NVM_DIR/nvm.sh"
+nvm install 24
+cd ~/Projects/betbetter/mobile
+npm ci
+npx expo start --go
+```
+
+Install [Expo Go](https://expo.dev/go) compatible with **SDK 58** on your phone, connect it to the same Wi-Fi as your Mac, and scan the QR code. Keep both terminals running. Expo tunnel mode does not expose the local games API.
+
+## Windows 11 / Windows 10 (WSL)
+
+Use Ubuntu through [Windows Subsystem for Linux](https://learn.microsoft.com/en-us/windows/wsl/install); Jac's installer does not currently support native PowerShell.
+
+**1. Open PowerShell as Administrator and paste:**
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+Restart Windows if prompted. Open **Ubuntu** from the Start menu and create your Linux username and password when asked. Run all remaining commands in **Ubuntu**, not PowerShell.
+
+**2. Install tools, get the project, and install dependencies:**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y curl git ca-certificates python3 build-essential
+curl -fsSL https://jaclang.org/install.sh | bash -s -- --version 0.37.25
+~/.local/bin/jac --version
+mkdir -p ~/Projects
+cd ~/Projects
+git clone https://github.com/elihelzberg/betbetter.git
+cd betbetter
+~/.local/bin/jac install
+~/.local/bin/jac install --npm
+```
+
+If you already cloned the repository inside Ubuntu, open that folder and run the two `jac install` commands instead of cloning again.
+
+**3. Start the website and backend:**
+
+```bash
+cd ~/Projects/betbetter
+~/.local/bin/jac run --dev
+```
+
+Wait for **Server ready**, then open **http://localhost:8000/** in your Windows browser. Leave Ubuntu running. Press **Ctrl+C** to stop. Windows/WSL startup has not yet been tested on this project.
+
+**4. Optional: run the mobile app.** Phone access to WSL needs additional networking. On **Windows 11 22H2 or later**, open PowerShell and paste:
+
+```powershell
+notepad.exe "$env:USERPROFILE\.wslconfig"
+```
+
+Add these lines to the file (merge them into an existing `[wsl2]` section if present), then save:
+
+```ini
+[wsl2]
+networkingMode=mirrored
+```
+
+Close your running Ubuntu processes, then run in PowerShell:
+
+```powershell
+wsl --shutdown
+```
+
+Reopen Ubuntu and start Jac:
+
+```bash
+cd ~/Projects/betbetter
+~/.local/bin/jac run --dev --host 0.0.0.0
+```
+
+Open a **second Ubuntu terminal** and paste:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+export NVM_DIR="$HOME/.nvm"
+. "$NVM_DIR/nvm.sh"
+nvm install 24
+cd ~/Projects/betbetter/mobile
+npm ci
+npx expo start --go --lan
+```
+
+Use Expo Go compatible with **SDK 58**, put your phone on the same Wi-Fi, and scan the QR code. Allow local-network access in Windows/Hyper-V firewall settings if needed. First check that your phone can open `http://<Windows-LAN-IP>:8000/`. See Microsoft's [WSL networking guide](https://learn.microsoft.com/en-us/windows/wsl/networking) if either the API or Expo is unreachable. Windows 10's default WSL networking needs manual port forwarding for phone access; the website instructions above do not need this.
+
+## Everyday commands (macOS or Ubuntu)
+
+**Start again after setup:**
+
+```sh
+cd ~/Projects/betbetter
+~/.local/bin/jac run --dev
+```
+
+**Check the games API from another terminal:**
+
+```sh
+curl --fail-with-body http://localhost:8000/api/games \
+  -H 'Content-Type: application/json' \
+  -d '{"state":"MI","min_price":0,"max_price":100,"sort_by":"jackpot_boost","search":"","limit":1000}'
+```
+
+Expect a JSON array. Send the full payload: an empty `{}` request failed with Jac 0.37.25.
+
+**Refresh lottery data manually** (requires Python 3; on macOS install it from [python.org](https://www.python.org/downloads/macos/) if missing):
+
+```sh
+cd ~/Projects/betbetter
+python3 test_lottery.py
+```
+
+## Quick troubleshooting
+
+- Use `~/.local/bin/jac` as shown above; the older Homebrew Jac 0.16.7 cannot run this app. `jac.toml` targets 0.37.23; startup and a games request were verified with 0.37.25.
+- If you cloned elsewhere, replace `~/Projects/betbetter` in the commands with your folder. Do not clone again into an existing `betbetter` directory.
+- Keep ports **8000** (website and mobile API proxy) and **8001** (backend) free. Stop previous instances with Ctrl+C.
+- Startup downloads real lottery data. Internet access is required for the first collection; failed refreshes keep the previous cache. Game counts change over time.
+- Jac manages its local database. No separate `server.py`, manual Postgres setup, or lottery API key is needed. Email/scheduler-disabled messages are optional-service notices.
+- Client changes hot-reload; restart Jac after backend changes.
+- If Expo Go reports an SDK mismatch, install a compatible client or use an [Expo development build](https://docs.expo.dev/develop/development-builds/introduction/).
+
+Installer references: [Jac](https://jaclang.org/docs/latest/quick-guide/install), [Node version manager](https://github.com/nvm-sh/nvm/tree/v0.40.3), and [Expo](https://docs.expo.dev/get-started/start-developing/).
 
 ## Collection and storage
 
