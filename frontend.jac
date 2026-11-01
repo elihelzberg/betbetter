@@ -101,7 +101,7 @@ def:pub Dashboard -> JsxElement {
             </section>
             {<GameDetails item={selected} history={history} loading={history_loading}/> if selected is not None else None}
             <div className="bottom-grid">
-                <section className="panel"><span className="eyebrow">ASK THE DATA</span><h2>A starting point for your AI.</h2><p className="muted">AI-assisted research · Rankings calculated using Michigan Lottery data</p>
+                <section className="panel"><span className="eyebrow">ASK THE DATA</span><h2>Find what you're looking for.</h2><p className="muted">AI-assisted research · Rankings calculated using Michigan Lottery data</p>
                 <div className="ai-disclaimer" role="note">
                     <strong>AI &amp; Gambling Disclaimer</strong>
                     <p>
