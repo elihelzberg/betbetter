@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, ActivityIndicator, StyleSheet, RefreshControl, Text } from 'react-native';
+import { View, FlatList, ActivityIndicator, StyleSheet, RefreshControl } from 'react-native';
+import { router } from 'expo-router';
 import { api } from '../services/api';
 import { RankedGame } from '../types/api';
 import { GameCard } from '../components/GameCard';
 
-export const RankingsScreen = ({ navigation }: any) => {
+export const RankingsScreen = () => {
   const [games, setGames] = useState<RankedGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -21,7 +22,14 @@ export const RankingsScreen = ({ navigation }: any) => {
     }
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => {
+    let active = true;
+    api.getGames({ sort_by: 'jackpot_boost' })
+      .then(data => { if (active) setGames(data); })
+      .catch(console.error)
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -44,7 +52,10 @@ export const RankingsScreen = ({ navigation }: any) => {
         renderItem={({ item }) => (
           <GameCard
             item={item}
-            onPress={() => navigation.navigate('Details', { gameId: item.game.game_id, name: item.game.name })}
+            onPress={() => router.push({
+              pathname: '/details/[gameId]',
+              params: { gameId: item.game.game_id, name: item.game.name, state: item.game.state },
+            })}
           />
         )}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#38bdf8" />}
