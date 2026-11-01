@@ -33,6 +33,10 @@ def cached_interpret_question(question: str) -> Query {
         # Validate before caching
         saved.state = "MI";
 
+        if saved.min_price == 0.0 and saved.max_price == 0.0 {
+            saved.max_price = 100.0;
+        }
+
         if (
             saved.min_price < 0 or
             saved.max_price > 100 or
@@ -102,6 +106,8 @@ Convert the user's Michigan lottery scratch-off question into a Query.
 
 Rules:
 - Always set state to "MI".
+- If the user does not specify a ticket price, use min_price = 0 and max_price = 100.
+- Do not interpret "top 5" as a $5 ticket price.
 - Extract min_price and max_price from the requested ticket prices.
 - If two prices are mentioned, use them as an inclusive range.
 - Use jackpot_probability for jackpot odds, chances, or probabilities.
