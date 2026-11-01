@@ -3,7 +3,7 @@
 Michigan scratch-off research built with Jac 0.37.23 and official Michigan Lottery data.
 
 ```sh
-jac run --dev
+python3 dev.py
 ```
 
 The dev server refreshes the official Michigan scratch-off catalog at startup.
@@ -12,12 +12,32 @@ certificate store. On a fresh checkout, install the npm dependencies declared
 in `jac.toml` once with `jac install --npm`; Jac does not provide a project
 startup hook for `jac run --dev` to run that install automatically.
 
+The startup module installs a project-local compatibility filter for Jac
+0.37.23's dev watcher (`dev_watch.py`). Desktop hot reload ignores the independent
+`mobile/` app and nested dependency/generated directories. Without this filter,
+file events in `mobile/node_modules` can repeatedly restore the desktop app and
+reset rankings. Restart `jac run --dev` after changing the filter.
+
 ## Expo Go mobile app
 
-Run the existing Jac server with `jac run --dev` in this directory. In a second
+Run **one** shared Jac server with `python3 dev.py` in this directory.
+This pins the desktop/proxy to port 8000 and the API to port 8001, and refuses
+to start if either port is occupied. Do not start a second Jac or `server.py`
+process for mobile. In a second
 terminal, run `cd mobile && npx expo start --go`, then scan the QR code with Expo
 Go. Keep the computer and phone on the same Wi-Fi; Expo tunnel mode does not
 expose the local data API.
+
+The mobile app includes price and name/ID filters, all ranking metrics, game
+prize tiers and snapshot history, questions, and methodology/source notes.
+Navigation uses Expo Router with routes in `mobile/src/app/`. After updating,
+run `npm install` in `mobile` and restart Expo to load the new router entry.
+The API defaults to the Expo host on port 8000. Set `EXPO_PUBLIC_API_URL` to a
+full API base URL (for example `https://your-server.example/api`) when using a
+hosted backend. The phone must be able to reach that URL.
+
+Mobile checks: `npm run typecheck`, `npm run lint`, and `npm test` (Node 22.13+
+or another Node version supported by the installed Expo/React Native SDK).
 
 The Jac server also exposes `POST /api/games`, `GET /api/games/{game_id}/history`,
 and `POST /api/ask` for the mobile app. These return bare JSON and call the same

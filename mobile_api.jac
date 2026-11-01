@@ -8,8 +8,8 @@ def:pub mobile_games(
     state: str = "MI", min_price: float = 0.0, max_price: float = 100.0,
     sort_by: str = "jackpot_boost", search: str = "", limit: int = 1000
 ) -> list[RankedGame] {
-    return list_games(Query(state=state, min_price=min_price, max_price=max_price,
-        sort_by=sort_by, search=search, limit=limit));
+    return list_games(Query(state=state, min_price=float(min_price), max_price=float(max_price),
+        sort_by=sort_by, search=search, limit=int(limit)));
 }
 
 @restspec(method=HTTPMethod.GET, path="/api/games/{game_id}/history", produces="application/json", envelope=False)

@@ -20,9 +20,13 @@ export interface GameSnapshot {
   inventory_method: string;
   source_url: string;
   status: string;
+  inventory_note: string;
+  source_updated_at: string;
+  is_demo: boolean;
 }
 
 export interface Metrics {
+  jackpot_enrichment: number | null;
   launch_ev_per_dollar: number | null;
   top_prizes_remaining: number;
   gross_ev: number | null;
@@ -56,4 +60,5 @@ export interface Answer {
   message: string;
   games: RankedGame[];
   mode: string;
+  sort_by: string;
 }

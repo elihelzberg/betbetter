@@ -30,7 +30,8 @@ typescript = "^5.3.3"
 directory = "tests"
 
 [serve]
-host = "127.0.0.1"
+host = "0.0.0.0"
+port = 8000
 
 [placement.pins]
 models = "server"
@@ -43,3 +44,10 @@ byllm = "~=0.6"
 [byllm]
 [byllm.model]
 default_model = "openrouter/openrouter/free"
+
+# Never silently move the shared mobile/desktop entry point to another port.
+[client.vite.server]
+strictPort = true
+
+[scripts]
+dev = "python3 dev.py"
