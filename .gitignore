@@ -1,5 +1,6 @@
 .jac/
 node_modules/
+.venv/
 .vscode/
 .idea/
 dist/

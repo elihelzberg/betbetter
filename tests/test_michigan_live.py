@@ -38,6 +38,26 @@ class CollectorTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 live.load_snapshots()
 
+    def test_history_filters_one_game_without_losing_observations(self):
+        first = [{'game_id': '1', 'observed_at': 'first'}, {'game_id': '2', 'observed_at': 'first'}]
+        second = [{'game_id': '1', 'observed_at': 'second'}, {'game_id': '2', 'observed_at': 'second'}]
+        with patch.object(live, 'collect', side_effect=[first, second]):
+            live.load_snapshots(force=True)
+            live.load_snapshots(force=True)
+        with patch.object(live, 'collect', side_effect=AssertionError('fresh cache must not refresh')):
+            self.assertEqual(live.load_snapshots(history=True, game_id='1'), [first[0], second[0]])
+            self.assertEqual(live.load_snapshots(game_id='1'), [second[0]])
+            self.assertEqual(live.load_snapshots(history=True), first + second)
+            self.assertEqual(live.load_snapshots(history=True, game_id="1' OR 1=1 --"), [])
+
+    def test_history_models_only_the_requested_game(self):
+        rows = [{'game_id': 'requested', 'observed_at': 'first'}]
+        with patch.object(live, 'load_snapshots', return_value=rows) as load, \
+             patch.object(live, 'estimate_snapshot', side_effect=lambda row: row) as estimate:
+            self.assertEqual(live.estimated_snapshots(history=True, game_id='requested'), rows)
+            load.assert_called_once_with(history=True, game_id='requested')
+            estimate.assert_called_once_with(rows[0])
+
     def test_normalize_aggregates_counts_without_inventory_estimate(self):
         game = dict(igtId=636, name='Official game', overallOdds='1 in 4.11',
                     displayedTicketPrice='$5.00', dateAdded='2024-01-02T00:00-05:00', identifier='GAME')

@@ -119,8 +119,8 @@ def estimate_snapshot(snapshot):
     return result
 
 
-def estimated_snapshots(history: bool = False) -> list[dict]:
-    return [estimate_snapshot(row) for row in load_snapshots(history=history)]
+def estimated_snapshots(history: bool = False, game_id: str | None = None) -> list[dict]:
+    return [estimate_snapshot(row) for row in load_snapshots(history=history, game_id=game_id)]
 
 
 def database():
@@ -131,7 +131,7 @@ def database():
     return db
 
 
-def load_snapshots(history: bool = False, force: bool = False) -> list[dict]:
+def load_snapshots(history: bool = False, force: bool = False, game_id: str | None = None) -> list[dict]:
     global _RETRY_AFTER
     with _LOCK, database() as db:
         latest = db.execute('SELECT fetched, payload FROM batches ORDER BY id DESC LIMIT 1').fetchone()
@@ -149,8 +149,16 @@ def load_snapshots(history: bool = False, force: bool = False) -> list[dict]:
         if not latest:
             raise RuntimeError('Michigan data unavailable; retry shortly')
         if history:
+            if game_id is not None:
+                # Filter before decoding/modeling the full catalog for every
+                # collection. All observations remain in the original cache.
+                return [json.loads(payload) for (payload,) in db.execute(
+                    "SELECT game.value FROM batches, json_each(batches.payload) AS game "
+                    "WHERE CAST(json_extract(game.value, '$.game_id') AS TEXT) = ? "
+                    "ORDER BY batches.id", (game_id,))]
             return [s for (payload,) in db.execute('SELECT payload FROM batches ORDER BY id') for s in json.loads(payload)]
-        return json.loads(latest[1])
+        rows = json.loads(latest[1])
+        return rows if game_id is None else [row for row in rows if str(row['game_id']) == game_id]
 
 
 if __name__ == '__main__':

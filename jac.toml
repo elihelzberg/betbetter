@@ -1,10 +1,10 @@
 [project]
 name = "betBetter"
 version = "0.1.0"
-Adescription = "Michigan scratch-off analysis prototype with deterministic math and official Michigan data"
+description = "Michigan scratch-off research with transparent math and official Michigan data"
 entry-point = "main"
 kind = "web-app"
-jac-version = "==0.37.23"
+jac-version = "~=0.37.23"
 
 [dependencies]
 [dependencies.npm]
@@ -21,10 +21,13 @@ vite = "^6.4.1"
 typescript = "^5.3.3"
 "@types/react" = "^19.2.0"
 "@types/react-dom" = "^19.2.0"
-
-
-
 [client]
+
+[client.app_meta_data]
+title = "betBetter · Michigan scratch-off research"
+description = "Explore Michigan scratch-off games with transparent expected values, prize pools, and snapshot history."
+theme_color = "#245b45"
+icon = "/static/assets/favicon.svg"
 
 [test]
 directory = "tests"
@@ -37,9 +40,6 @@ port = 8000
 models = "server"
 endpoints = "server"
 "components.Formatting" = "client"
-
-[dependencies.pypi]
-byllm = "~=0.6"
 
 [byllm]
 [byllm.model]
