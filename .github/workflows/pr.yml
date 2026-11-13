@@ -18,7 +18,7 @@ jobs:
     timeout-minutes: 25
     env:
       BETBETTER_OFFLINE: '1'
-      MICHIGAN_CACHE_PATH: ${{ runner.temp }}/betbetter-test-cache.sqlite3
+      MICHIGAN_CACHE_PATH: .data/ci-michigan.sqlite3
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
