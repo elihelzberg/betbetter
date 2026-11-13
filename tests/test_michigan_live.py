@@ -18,7 +18,7 @@ class CollectorTests(unittest.TestCase):
         self.temp.cleanup()
 
     def test_cache_and_failure_preserve_complete_batch(self):
-        games = [{'game_id': str(i)} for i in range(107)]
+        games = [{'game_id': str(i), 'observed_at': '2026-11-01T12:00:00+00:00'} for i in range(107)]
         with patch.object(live, 'collect', return_value=games) as collect:
             self.assertEqual(live.load_snapshots(), games)
             self.assertEqual(live.load_snapshots(), games)
@@ -28,6 +28,7 @@ class CollectorTests(unittest.TestCase):
         with patch.object(live, 'collect', side_effect=ValueError('Incomplete source')):
             self.assertEqual(live.load_snapshots(), games)
             self.assertEqual(live.load_snapshots(history=True), games)
+            self.assertEqual(live.load_snapshots()[0]['observed_at'], '2026-11-01T12:00:00+00:00')
             with self.assertRaises(ValueError):
                 live.load_snapshots(force=True)
         with live.database() as db:
@@ -37,6 +38,12 @@ class CollectorTests(unittest.TestCase):
         with patch.object(live, 'collect', side_effect=ValueError('offline')):
             with self.assertRaises(ValueError):
                 live.load_snapshots()
+
+    def test_offline_regressions_cannot_contact_the_live_provider(self):
+        with patch.dict(os.environ, BETBETTER_OFFLINE='1'), patch.object(live.subprocess, 'run') as process:
+            with self.assertRaisesRegex(RuntimeError, 'disabled in offline regression tests'):
+                live.request([])
+            process.assert_not_called()
 
     def test_history_filters_one_game_without_losing_observations(self):
         first = [{'game_id': '1', 'observed_at': 'first'}, {'game_id': '2', 'observed_at': 'first'}]

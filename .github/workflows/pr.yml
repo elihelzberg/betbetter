@@ -1,0 +1,55 @@
+name: BetBetter PR checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regression-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      BETBETTER_OFFLINE: '1'
+      MICHIGAN_CACHE_PATH: .data/ci-michigan.sqlite3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.0'
+      - name: Install Jac 0.37.23
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bin_dir="$RUNNER_TEMP/jac-bin"
+          mkdir -p "$bin_dir"
+          cd "$bin_dir"
+          asset=jac-0.37.23-linux-x86_64
+          gh release download v0.37.23 -R jaseci-labs/jac -p "$asset" -p "$asset.sha256"
+          sha256sum -c "$asset.sha256"
+          mv "$asset" jac
+          chmod +x jac
+          echo "$bin_dir" >> "$GITHUB_PATH"
+      - name: Backend checks
+        run: |
+          jac --version
+          jac install
+          jac install --npm
+          jac check --nowarn
+          jac test
+          jac build --as client
+          python3 -m unittest discover -s tests -p 'test_*.py'
+      - name: Mobile checks
+        working-directory: mobile
+        run: |
+          npm ci
+          npm run typecheck
+          npm run lint
+          npm test

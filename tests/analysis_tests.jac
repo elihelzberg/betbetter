@@ -120,7 +120,10 @@ test "question demo invokes same deterministic price filtering" {
     assert len(answer.games) == 3;
     assert answer.mode == "demo rules";
     assert answer.games[0].game.game_id == "DEMO-MI-001";
-    assert answer_question("hello", latest_snapshots()).games == [];
+    with patch("repository.fetch_live", return_value=demo_snapshots()),
+         patch("assistant.interpret_question", side_effect=RuntimeError("model unavailable in test")) {
+        assert answer_question("hello", latest_snapshots()).games == [];
+    }
     with testraises(ValueError) { answer_question("", []); }
 }
 

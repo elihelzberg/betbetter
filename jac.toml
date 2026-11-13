@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Michigan scratch-off research with transparent math and official Michigan data"
 entry-point = "main"
 kind = "web-app"
-jac-version = "~=0.37.23"
+jac-version = "==0.37.23"
 
 [dependencies]
 [dependencies.npm]
@@ -51,3 +51,14 @@ strictPort = true
 
 [scripts]
 dev = "python3 dev.py"
+
+[environments.production.serve]
+docs_enabled = false
+graph_enabled = false
+
+[environments.production.serve.workers]
+count = "1"
+
+[environments.production.serve.access_log]
+format = "json"
+suppress_health_checks = true
