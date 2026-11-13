@@ -1,19 +1,30 @@
 # betBetter
 
-Michigan scratch-off research built with Jac 0.37.23 and official Michigan Lottery data.
+Michigan scratch-off research built with the native Jac 0.37.x compiler and official Michigan Lottery data.
 
 ```sh
 python3 dev.py
 ```
 
+Install the [native Jac compiler](https://jaclang.org/docs/latest/quick-guide/install)
+(version 0.37.23 or a newer 0.37.x patch), then install the declared dependencies:
+
+```sh
+~/.local/bin/jac install
+```
+
+`python3 dev.py` checks the compiler version and falls back to `~/.local/bin/jac`
+if `jac` on PATH is an older pip installation. Set `JAC_BIN=/path/to/jac` to
+choose a specific compiler. Jac is distributed as a native binary; do not try
+to install this compiler version with pip.
+
 The dev server refreshes the official Michigan scratch-off catalog at startup.
 The collector requires `curl` on PATH and verifies TLS certificates using its
-certificate store. On a fresh checkout, install the npm dependencies declared
-in `jac.toml` once with `jac install --npm`; Jac does not provide a project
-startup hook for `jac run --dev` to run that install automatically.
+certificate store. The initial `jac install` installs the Python capability dependencies and npm
+packages declared in `jac.toml`. Re-run it when dependency declarations change.
 
 The startup module installs a project-local compatibility filter for Jac
-0.37.23's dev watcher (`dev_watch.py`). Desktop hot reload ignores the independent
+0.37.x's dev watcher (`dev_watch.py`). Desktop hot reload ignores the independent
 `mobile/` app and nested dependency/generated directories. Without this filter,
 file events in `mobile/node_modules` can repeatedly restore the desktop app and
 reset rankings. Restart `jac run --dev` after changing the filter.
@@ -82,3 +93,24 @@ The Jac tests cover calculation, filtering, all 107 results without truncation, 
 ## Jackpot and smaller-prize metrics
 
 The dashboard keeps total gross EV per dollar and also shows estimated jackpot odds and estimated net EV per ticket excluding jackpot. Jackpot means the largest cash prize tier. Non-jackpot net EV = sum of smaller prize amounts × remaining counts / estimated remaining tickets − ticket price. Jackpot-winning tickets remain in the denominator, with their payout omitted from this particular metric. It is not conditional on avoiding a jackpot. Negative amounts mean an expected loss from the smaller-prize contribution. Both metrics are available for ranking and in game details; all rely on the same inventory assumptions.
+
+## Web dashboard structure
+
+`frontend.jac` owns page state and composes the research sections. Its async
+request handlers live in `frontend.impl.jac`. Components in `components/`
+provide the overview, paginated rankings, detailed prize pools and history,
+question panel, and methodology. History reads filter to the selected game
+before modeling; the UI shows ten observations per page, starting with the
+latest page. All saved observations remain accessible. `Formatting.jac` centralizes metric names and
+values; `Styles.jac` holds visual tokens and responsive styles; `Icon.jac`
+provides the shared inline icons. All UI source remains Jac.
+
+Quick ticket-price filters apply immediately. Name/ID, ranking metric, and
+custom price-range changes apply with **Apply filters** or Enter. Rankings show
+12 games per page; every result remains accessible through pagination. Selecting
+a game opens its full detail section. History and question errors are kept in
+their own sections so one failure does not hide successful ranking data.
+
+The independent Expo app and its raw JSON API keep their existing behavior.
+The shared launcher serves the web app on 8000 and the API on 8001; no temporary
+adapter or separately maintained frontend build is needed.

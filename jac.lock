@@ -8,4 +8,4 @@ resolved = ["Jinja2==3.1.6", "MarkupSafe==3.0.4", "PyYAML==6.0.3", "aiohappyeyeb
 inputs = "sha256:f3ad5a4054f733b1e807640103b8938e80ead5e1ee0dfcd26b59a5241802664e"
 
 [npm]
-bun_lock = "sha256:913a96efaa55220617829fe0ed706212fa91d396e6715274586d54d2fdc7c772"
+bun_lock = "sha256:d7840f610418ff92f4b4cf78776c4aefa39828d47b84698de2ab0f1982bff8fe"
