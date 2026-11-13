@@ -51,3 +51,14 @@ strictPort = true
 
 [scripts]
 dev = "python3 dev.py"
+
+[environments.production.serve]
+docs_enabled = false
+graph_enabled = false
+
+[environments.production.serve.workers]
+count = "1"
+
+[environments.production.serve.access_log]
+format = "json"
+suppress_health_checks = true

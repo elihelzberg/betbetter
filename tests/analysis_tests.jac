@@ -20,8 +20,7 @@ def fixture() -> GameSnapshot {
 
 test "hand calculated EV probabilities and enrichment" {
     m = calculate(fixture());
-    # Deliberate draft-PR probe: restore 7.5 after observing CI reject this assertion.
-    assert m.gross_ev == 7.6;
+    assert m.gross_ev == 7.5;
     assert m.net_ev == -2.5;
     assert m.ev_per_dollar == 0.75;
     assert m.launch_ev_per_dollar == 0.6;

@@ -53,6 +53,9 @@ permanent-deploy slot; free sandbox deployments expire after 30 days. Check
 the account's actual limits before choosing the deployment target. Never
 upgrade a plan automatically.
 
+Set `JAC_PROFILE=production` on the host to disable development docs/graph
+routes and keep one SQLite writer with structured access logs.
+
 Set `EXPO_PUBLIC_API_URL` to the full hosted HTTPS API base (`<public-url>/api`)
 when starting or building the Expo client; restart Metro after changing it.
 Keep production secrets in the host's environment settings. Leave
