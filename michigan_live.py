@@ -24,6 +24,8 @@ _RETRY_AFTER = 0.0
 
 
 def request(operations):
+    if os.environ.get('BETBETTER_OFFLINE') == '1':
+        raise RuntimeError('Live Michigan requests are disabled in offline regression tests')
     result = subprocess.run(
         ['curl', '--silent', '--show-error', '--fail-with-body', '--max-time', '45',
          API, '-H', 'Content-Type: application/json', '-H', 'cms-type: production',

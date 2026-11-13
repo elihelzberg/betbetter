@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Michigan scratch-off research with transparent math and official Michigan data"
 entry-point = "main"
 kind = "web-app"
-jac-version = "~=0.37.23"
+jac-version = "==0.37.23"
 
 [dependencies]
 [dependencies.npm]

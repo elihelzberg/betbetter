@@ -1,13 +1,13 @@
 # betBetter
 
-Michigan scratch-off research built with the native Jac 0.37.x compiler and official Michigan Lottery data.
+Michigan scratch-off research built with native Jac 0.37.23 and official Michigan Lottery data.
 
 ```sh
 python3 dev.py
 ```
 
 Install the [native Jac compiler](https://jaclang.org/docs/latest/quick-guide/install)
-(version 0.37.23 or a newer 0.37.x patch), then install the declared dependencies:
+(version 0.37.23, pinned for launch), then install the declared dependencies:
 
 ```sh
 ~/.local/bin/jac install
@@ -114,3 +114,20 @@ their own sections so one failure does not hide successful ranking data.
 The independent Expo app and its raw JSON API keep their existing behavior.
 The shared launcher serves the web app on 8000 and the API on 8001; no temporary
 adapter or separately maintained frontend build is needed.
+
+## Launch checks
+
+The `BetBetter PR checks` workflow runs the `regression` job on every pull
+request and on pushes to `main`. It verifies the checksum of the official Jac
+0.37.23 Linux binary, runs backend tests and the client build, and checks the
+Expo client. Collector and model responses are mocked in tests. Setting
+`BETBETTER_OFFLINE=1` rejects accidental live collector requests; production
+must leave this flag unset.
+
+Mobile detail requests use a cancellable loader in
+`mobile/src/services/details.ts`, while the route keeps its game-ID/state/retry
+key. Regressions alongside the API tests cover switching A to B before A's
+history returns, late catalog responses, empty history, and failed requests.
+
+See [the launch runbook](docs/launch.md) for required branch checks, JacHammer
+deployment, and separate live smoke verification.

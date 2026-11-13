@@ -20,7 +20,8 @@ def fixture() -> GameSnapshot {
 
 test "hand calculated EV probabilities and enrichment" {
     m = calculate(fixture());
-    assert m.gross_ev == 7.5;
+    # Deliberate draft-PR probe: restore 7.5 after observing CI reject this assertion.
+    assert m.gross_ev == 7.6;
     assert m.net_ev == -2.5;
     assert m.ev_per_dollar == 0.75;
     assert m.launch_ev_per_dollar == 0.6;
@@ -120,7 +121,10 @@ test "question demo invokes same deterministic price filtering" {
     assert len(answer.games) == 3;
     assert answer.mode == "demo rules";
     assert answer.games[0].game.game_id == "DEMO-MI-001";
-    assert answer_question("hello", latest_snapshots()).games == [];
+    with patch("repository.fetch_live", return_value=demo_snapshots()),
+         patch("assistant.interpret_question", side_effect=RuntimeError("model unavailable in test")) {
+        assert answer_question("hello", latest_snapshots()).games == [];
+    }
     with testraises(ValueError) { answer_question("", []); }
 }
 
